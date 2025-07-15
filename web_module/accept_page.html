@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Accept Payment</title>
+  <script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-indigo-100 to-indigo-200 min-h-screen flex items-center justify-center">
+  <div class="bg-white shadow-2xl rounded-2xl p-8 w-full max-w-md border border-indigo-200">
+    <h2 class="text-3xl font-bold mb-6 text-center text-indigo-800">Make Your Payment</h2>
+
+    <div class="mb-4">
+      <label class="block text-sm font-medium text-gray-700">UPI ID:</label>
+      <div class="flex items-center space-x-2">
+        <p id="upiId" class="text-lg font-semibold text-gray-800">Loading...</p>
+        <button onclick="copyUPI()" class="bg-gray-200 px-2 py-1 rounded text-sm hover:bg-gray-300">Copy</button>
+      </div>
+    </div>
+
+    <div class="mb-4">
+      <label class="block text-sm font-medium text-gray-700">Amount:</label>
+      <p id="amount" class="text-lg font-semibold text-gray-800">Loading...</p>
+    </div>
+
+    <div class="mb-4 text-center">
+      <button onclick="generateQR()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded">Generate QR</button>
+      <div id="qrTimer" class="mt-2 text-sm text-red-600 font-semibold"></div>
+    </div>
+
+    <div id="qrcode" class="flex justify-center mb-4"></div>
+
+    <form onsubmit="submitUTR(event)" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Enter UTR Number:</label>
+        <input type="text" id="utr" required class="w-full px-3 py-2 border border-gray-300 rounded-md" />
+      </div>
+      <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Submit Payment</button>
+    </form>
+
+    <div id="status" class="mt-4 text-sm font-semibold text-gray-700 text-center"></div>
+    <div id="sessionTimer" class="mt-4 text-sm font-bold text-blue-700 text-center"></div>
+  </div>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get("token");
+
+    let tokenData = {};
+    if (token) {
+      try {
+        tokenData = JSON.parse(atob(token));
+        document.getElementById("upiId").innerText = tokenData.upi_id || "Invalid UPI";
+        document.getElementById("amount").innerText = tokenData.amount ? `₹${tokenData.amount}` : "Invalid Amount";
+      } catch (err) {
+        alert("Invalid token provided in URL.");
+      }
+    } else {
+      alert("No token found in URL.");
+    }
+
+    // Page session timer (2 minutes)
+    let pageSeconds = 120;
+    const sessionTimer = document.getElementById("sessionTimer");
+    const pageInterval = setInterval(() => {
+      pageSeconds--;
+      sessionTimer.innerText = `Session will expire in ${pageSeconds}s`;
+      if (pageSeconds <= 0) {
+        clearInterval(pageInterval);
+        window.location.href = "session_expired.html";
+      }
+    }, 1000);
+
+    function generateQR() {
+      if (!tokenData.upi_id || !tokenData.amount) return alert("Missing payment details.");
+
+      const upiLink = `upi://pay?pa=${tokenData.upi_id}&pn=Payee&am=${tokenData.amount}&cu=INR`;
+
+      const qr = new QRious({
+        element: document.createElement("canvas"),
+        value: upiLink,
+        size: 200
+      });
+
+      const qrDiv = document.getElementById("qrcode");
+      qrDiv.innerHTML = "";
+      qrDiv.appendChild(qr.element);
+
+      // QR timer
+      let qrSeconds = 120;
+      const qrTimer = document.getElementById("qrTimer");
+      qrTimer.innerText = `QR valid for ${qrSeconds} seconds`;
+
+      const qrInterval = setInterval(() => {
+        qrSeconds--;
+        qrTimer.innerText = `QR valid for ${qrSeconds} seconds`;
+        if (qrSeconds <= 0) {
+          clearInterval(qrInterval);
+          qrDiv.innerHTML = "<p class='text-red-600 font-semibold'>QR expired. Please regenerate.</p>";
+          qrTimer.innerText = "";
+        }
+      }, 1000);
+    }
+
+    function submitUTR(event) {
+      event.preventDefault();
+      const enteredUTR = document.getElementById("utr").value;
+      document.getElementById("status").innerText = `UTR ${enteredUTR} submitted. Awaiting confirmation...`;
+      document.getElementById("utr").value = "";
+    }
+
+    function copyUPI() {
+      const upi = document.getElementById("upiId").innerText;
+      navigator.clipboard.writeText(upi).then(() => {
+        alert("UPI ID copied to clipboard");
+      });
+    }
+  </script>
+</body>
+</html>
