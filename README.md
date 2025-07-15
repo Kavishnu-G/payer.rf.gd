@@ -66,7 +66,11 @@ session_expired.html
 - ✅ Built using [Firebase Studio](https://idx.google.com/payerrfgd-35255344) (Google IDX)
 
 ---
+## 🎬 Live Demo
 
+[![Watch the Demo](https://img.youtube.com/vi/2LV6_80hC3g/0.jpg)](https://www.youtube.com/watch?v=2LV6_80hC3g)
+
+---
 ## 🔧 Features
 
 ### ✅ Android App (Flutter)
